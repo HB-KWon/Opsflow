@@ -6,11 +6,10 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      // 프론트에서 /api 로 요청하면 백엔드(3000번 포트)로 그대로 전달
+      // 프론트에서 /api 로 요청하면 백엔드(3000번 포트)로 경로 그대로 전달 (백엔드도 /api 접두사 사용)
       '/api': {
         target: 'http://localhost:3000',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
   },
