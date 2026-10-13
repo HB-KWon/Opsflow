@@ -1,0 +1,16 @@
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { typeOrmConfig } from './config/typeorm.config';
+import { HealthController } from './health/health.controller';
+
+@Module({
+  imports: [
+    // .env 파일을 읽어서 process.env 로 쓸 수 있게 해줌
+    ConfigModule.forRoot({ isGlobal: true }),
+    // DB 연결 설정 (아래 config/typeorm.config.ts 참고)
+    TypeOrmModule.forRootAsync({ useFactory: typeOrmConfig }),
+  ],
+  controllers: [HealthController],
+})
+export class AppModule {}

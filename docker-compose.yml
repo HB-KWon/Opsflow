@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: opsflow
+      POSTGRES_PASSWORD: opsflow
+      POSTGRES_DB: opsflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - opsflow_pg_data:/var/lib/postgresql/data
+
+  # DB 내용을 브라우저에서 바로 들여다보고 싶을 때 쓰는 가벼운 관리 도구.
+  # http://localhost:8080 접속 후 System: PostgreSQL, Server: postgres, 위 계정으로 로그인
+  adminer:
+    image: adminer:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+volumes:
+  opsflow_pg_data:
