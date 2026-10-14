@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { typeOrmConfig } from './config/typeorm.config';
 import { HealthController } from './health/health.controller';
+import { IncidentsModule } from './incidents/incidents.module';
 import { RequestsModule } from './requests/requests.module';
 import { UsersModule } from './users/users.module';
 
@@ -15,6 +16,7 @@ import { UsersModule } from './users/users.module';
     TypeOrmModule.forRootAsync({ useFactory: typeOrmConfig }),
     AuthModule,
     RequestsModule,
+    IncidentsModule,
     UsersModule,
   ],
   controllers: [HealthController],
