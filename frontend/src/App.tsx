@@ -1,14 +1,8 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { AuthProvider, useAuth } from './lib/auth';
+import AppLayout, { ComingSoon, NAV } from './components/AppLayout';
+import { AuthProvider } from './lib/auth';
+import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
-
-// 대시보드 자리: 이번 작업에서는 로그인 여부만 확인하는 빈 화면
-function Home() {
-  const { status } = useAuth();
-  if (status === 'loading') return null;
-  if (status === 'out') return <Navigate to="/login" replace />;
-  return <div className="p-8 text-sm">로그인됨</div>;
-}
 
 function App() {
   return (
@@ -16,7 +10,12 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={<Home />} />
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<Dashboard />} />
+            {NAV.filter((n) => n.to !== '/').map((n) => (
+              <Route key={n.to} path={n.to} element={<ComingSoon />} />
+            ))}
+          </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

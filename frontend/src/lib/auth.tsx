@@ -2,32 +2,58 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import { api, refreshAccessToken, setAccessToken, setOnAuthLost } from './api';
 
 type Status = 'loading' | 'in' | 'out';
-type AuthValue = { status: Status; login: (email: string, password: string) => Promise<void> };
+export type Role = 'MEMBER' | 'MANAGER' | 'ADMIN';
+export type User = { id: string; email: string; name: string; role: Role; organizationId: string | null };
+type AuthValue = {
+  status: Status;
+  user: User | null;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+};
 
 const AuthContext = createContext<AuthValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<Status>('loading');
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    setOnAuthLost(() => setStatus('out'));
-    // 새로고침 복구: httpOnly 쿠키의 Refresh Token으로 Access Token 재발급
-    refreshAccessToken().then((token) => {
+    setOnAuthLost(() => {
+      setUser(null);
+      setStatus('out');
+    });
+    // 새로고침 복구: httpOnly 쿠키의 Refresh Token으로 Access Token 재발급 후 사용자 정보 조회
+    refreshAccessToken().then(async (token) => {
       setAccessToken(token);
-      setStatus(token ? 'in' : 'out');
+      if (!token) return setStatus('out');
+      try {
+        setUser(await api<User>('/auth/me'));
+        setStatus('in');
+      } catch {
+        setStatus('out');
+      }
     });
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    const { accessToken } = await api<{ accessToken: string }>('/auth/login', {
+    const res = await api<{ accessToken: string; user: User }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
-    setAccessToken(accessToken);
+    setAccessToken(res.accessToken);
+    setUser(res.user);
     setStatus('in');
   }, []);
 
-  return <AuthContext.Provider value={{ status, login }}>{children}</AuthContext.Provider>;
+  // 서버 호출이 실패해도(이미 만료 등) 이 브라우저에서는 로그아웃 상태로 만든다
+  const logout = useCallback(async () => {
+    await api('/auth/logout', { method: 'POST' }).catch(() => {});
+    setAccessToken(null);
+    setUser(null);
+    setStatus('out');
+  }, []);
+
+  return <AuthContext.Provider value={{ status, user, login, logout }}>{children}</AuthContext.Provider>;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
