@@ -3,13 +3,16 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 import { DataSource, IsNull, QueryFailedError, Repository } from 'typeorm';
+import { AuditService } from '../audit/audit.service';
 import { User } from '../users/user.entity';
-import { AuthResult, AuthUser } from './auth-user';
+import { UserRole } from '../users/user-role.enum';
+import { AuthResult, AuthUser, requireOrganization } from './auth-user';
 import { AuthService, BCRYPT_ROUNDS, sha256 } from './auth.service';
 import { AcceptInvitationDto, CreateInvitationDto } from './dto/auth.dto';
 import { Invitation } from './invitation.entity';
@@ -35,6 +38,7 @@ export class InvitationsService {
     @InjectRepository(Invitation) private readonly invitations: Repository<Invitation>,
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly auth: AuthService,
+    private readonly audit: AuditService,
   ) {}
 
   async create(admin: AuthUser, dto: CreateInvitationDto): Promise<CreatedInvitation> {
@@ -46,20 +50,68 @@ export class InvitationsService {
       throw new ConflictException(EMAIL_TAKEN);
     }
 
-    // 같은 조직에서 같은 이메일로 보낸 대기 중인 초대는 폐기하고 새로 발급한다 (재발송)
-    await this.invitations.update(
-      { organizationId: admin.organizationId, email: dto.email, acceptedAt: IsNull(), revokedAt: IsNull() },
+    return this.issue(this.invitations, admin.organizationId, admin.id, dto.email, dto.role);
+  }
+
+  // AUTH-009 초대 재발송. 새 토큰(새 유효기간)을 발급하고 기존 토큰은 폐기한다.
+  async resend(admin: AuthUser, id: string): Promise<CreatedInvitation> {
+    const organizationId = requireOrganization(admin);
+    return this.dataSource.transaction(async (manager) => {
+      // 같은 초대에 대한 수락(accept)과 순서가 섞이지 않도록 잠근다
+      const invitation = await manager.findOne(Invitation, {
+        where: { id, organizationId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!invitation) throw new NotFoundException('초대를 찾을 수 없습니다.');
+      if (invitation.acceptedAt || (await manager.existsBy(User, { email: invitation.email }))) {
+        throw new ConflictException('이미 가입한 구성원입니다.');
+      }
+      // 폐기된 초대는 더 새로운 초대로 대체된 것. 옛 역할로 되살리지 않도록 막는다.
+      if (invitation.revokedAt) {
+        throw new ConflictException('새 초대로 대체된 초대입니다. 최신 초대를 재발송해 주세요.');
+      }
+
+      const created = await this.issue(
+        manager.getRepository(Invitation),
+        organizationId,
+        admin.id,
+        invitation.email,
+        invitation.role,
+      );
+      await this.audit.record(manager, {
+        organizationId,
+        actorId: admin.id,
+        entityType: 'INVITATION',
+        entityId: created.id,
+        action: 'INVITATION_RESENT',
+        summary: '초대 재발송',
+        changes: { previousInvitationId: invitation.id },
+      });
+      return created;
+    });
+  }
+
+  // 같은 조직에서 같은 이메일로 보낸 대기 중인 초대는 폐기하고 새로 발급한다 (재초대·재발송 공통)
+  private async issue(
+    invitations: Repository<Invitation>,
+    organizationId: string,
+    invitedById: string,
+    email: string,
+    role: UserRole,
+  ): Promise<CreatedInvitation> {
+    await invitations.update(
+      { organizationId, email, acceptedAt: IsNull(), revokedAt: IsNull() },
       { revokedAt: new Date() },
     );
 
     const token = randomBytes(32).toString('base64url');
-    const invitation = await this.invitations.save(
-      this.invitations.create({
-        organizationId: admin.organizationId,
-        email: dto.email,
-        role: dto.role,
+    const invitation = await invitations.save(
+      invitations.create({
+        organizationId,
+        email,
+        role,
         tokenHash: sha256(token),
-        invitedById: admin.id,
+        invitedById,
         expiresAt: new Date(Date.now() + INVITATION_TTL_MS),
       }),
     );

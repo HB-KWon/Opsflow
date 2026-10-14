@@ -3,6 +3,8 @@ import {
   Controller,
   Get,
   HttpCode,
+  Param,
+  ParseUUIDPipe,
   Post,
   Req,
   Res,
@@ -108,5 +110,17 @@ export class AuthController {
       expires: result.refreshExpiresAt,
     });
     return { accessToken: result.accessToken, user: result.user };
+  }
+}
+
+// AUTH-009 초대 재발송 (Admin 전용). 응답의 token이 새 초대 토큰이고, 이전 토큰은 더 이상 쓸 수 없다.
+@Controller('invitations')
+export class InvitationsController {
+  constructor(private readonly invitations: InvitationsService) {}
+
+  @Roles(UserRole.ADMIN)
+  @Post(':id/resend')
+  resend(@CurrentUser() admin: AuthUser, @Param('id', ParseUUIDPipe) id: string): Promise<CreatedInvitation> {
+    return this.invitations.resend(admin, id);
   }
 }

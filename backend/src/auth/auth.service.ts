@@ -4,7 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { createHash, randomUUID } from 'crypto';
-import { FindOptionsSelect, IsNull, Repository } from 'typeorm';
+import { EntityManager, FindOptionsSelect, IsNull, Repository } from 'typeorm';
 import { User } from '../users/user.entity';
 import {
   AccessTokenPayload,
@@ -92,6 +92,12 @@ export class AuthService {
 
   async logout(sessionId: string): Promise<void> {
     await this.revokeSession(sessionId);
+  }
+
+  // AUTH-008 비활성화: 로그아웃과 같은 방식(revokedAt 표시)으로 그 사용자의 모든 세션을 폐기한다.
+  // 호출한 쪽 트랜잭션에 묶이도록 EntityManager를 받는다.
+  async revokeAllSessions(manager: EntityManager, userId: string): Promise<void> {
+    await manager.update(Session, { userId, revokedAt: IsNull() }, { revokedAt: new Date() });
   }
 
   // 로그인과 초대 수락(AUTH-005)이 함께 쓴다
