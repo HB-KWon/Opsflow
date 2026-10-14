@@ -9,6 +9,8 @@ import {
   RejectRequestDto,
   UpdateRequestDto,
 } from './dto/requests.dto';
+import { CreateTemplateDto, UpdateTemplateDto } from './dto/request-templates.dto';
+import { RequestTemplatesService } from './request-templates.service';
 import { RequestsService } from './requests.service';
 
 // RQ SRS API 매핑. 로그인은 전역 JwtAuthGuard, 역할은 @Roles()(RolesGuard),
@@ -70,13 +72,40 @@ export class RequestsController {
   }
 }
 
-// 요청 생성 폼에서 고를 유형 목록
+// 요청 생성 폼에서 고를 유형 목록 + RQ-012 유형 관리(Admin)
 @Controller('request-templates')
 export class RequestTemplatesController {
-  constructor(private readonly requests: RequestsService) {}
+  constructor(
+    private readonly requests: RequestsService,
+    private readonly templates: RequestTemplatesService,
+  ) {}
 
+  // includeArchived=true는 Admin일 때만 반영하고, 다른 역할이면 무시한다
   @Get()
-  list(@CurrentUser() user: AuthUser) {
+  list(@CurrentUser() user: AuthUser, @Query('includeArchived') includeArchived?: string) {
+    if (includeArchived === 'true' && user.role === UserRole.ADMIN) {
+      return this.templates.listIncludingArchived(user);
+    }
     return this.requests.listTemplates(user);
+  }
+
+  @Roles(UserRole.ADMIN)
+  @Post()
+  create(@CurrentUser() user: AuthUser, @Body() dto: CreateTemplateDto) {
+    return this.templates.create(user, dto);
+  }
+
+  @Roles(UserRole.ADMIN)
+  @Patch(':id')
+  update(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateTemplateDto) {
+    return this.templates.update(user, id, dto);
+  }
+
+  // 이미 보관된 유형이면 그대로 200 (멱등)
+  @Roles(UserRole.ADMIN)
+  @Post(':id/archive')
+  @HttpCode(200)
+  archive(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.templates.archive(user, id);
   }
 }
