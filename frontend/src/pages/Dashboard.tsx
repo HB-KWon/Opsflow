@@ -1,18 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
+import { SeverityBadge, type Severity } from '../lib/incidents';
 import { REQUEST_STATUS, type RequestStatus } from '../lib/requests';
 
 type Page<T> = { items: T[]; total: number };
 type RequestItem = { id: string; title: string; status: RequestStatus; createdAt: string };
-type IncidentItem = { id: string; title: string; severity: string; createdAt: string };
+type IncidentItem = { id: string; title: string; severity: Severity; createdAt: string };
 
-const SEVERITY_STYLE: Record<string, string> = {
-  CRITICAL: 'bg-[#8A3D37] text-white',
-  HIGH: 'bg-[#F3E1DF] text-[#8A3D37]',
-  MEDIUM: 'bg-[#F6EBD4] text-[#7A5A1E]',
-  LOW: 'bg-[#ECEBE6] text-[#4A4945]',
-};
 
 type Data = {
   stats: { label: string; value: number }[];
@@ -110,8 +105,8 @@ export default function Dashboard() {
             {data?.activeIncidents.map((i) => (
               <li key={i.id} className="flex items-center justify-between gap-3 px-5 py-3 text-sm">
                 <span className="truncate">{i.title}</span>
-                <span className={`shrink-0 text-[11px] font-semibold rounded px-2 py-0.5 ${SEVERITY_STYLE[i.severity] ?? ''}`}>
-                  {i.severity}
+                <span className="shrink-0">
+                  <SeverityBadge severity={i.severity} />
                 </span>
               </li>
             ))}

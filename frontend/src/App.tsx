@@ -2,6 +2,8 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import AppLayout, { ComingSoon, NAV } from './components/AppLayout';
 import { AuthProvider } from './lib/auth';
 import Dashboard from './pages/Dashboard';
+import IncidentDetail from './pages/IncidentDetail';
+import IncidentList from './pages/IncidentList';
 import Login from './pages/Login';
 import RequestDetail from './pages/RequestDetail';
 import RequestList from './pages/RequestList';
@@ -17,7 +19,10 @@ function App() {
             <Route path="/requests" element={<RequestList />} />
             <Route path="/requests/new" element={<ComingSoon />} />
             <Route path="/requests/:id" element={<RequestDetail />} />
-            {NAV.filter((n) => n.to !== '/' && n.to !== '/requests').map((n) => (
+            <Route path="/incidents" element={<IncidentList />} />
+            <Route path="/incidents/new" element={<ComingSoon />} />
+            <Route path="/incidents/:id" element={<IncidentDetail />} />
+            {NAV.filter((n) => !['/', '/requests', '/incidents'].includes(n.to)).map((n) => (
               <Route key={n.to} path={n.to} element={<ComingSoon />} />
             ))}
           </Route>
