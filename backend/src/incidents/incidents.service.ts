@@ -1,17 +1,9 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
-import { InjectDataSource, InjectRepository } from "@nestjs/typeorm";
-import { DataSource, EntityManager, In, Repository } from "typeorm";
-import {
-  AuditEntry,
-  AuditHistoryItem,
-  AuditService,
-} from "../audit/audit.service";
-import { AuthUser, requireOrganization } from "../auth/auth-user";
-import { User } from "../users/user.entity";
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, EntityManager, In, Repository } from 'typeorm';
+import { AuditEntry, AuditHistoryItem, AuditService } from '../audit/audit.service';
+import { AuthUser, requireOrganization } from '../auth/auth-user';
+import { User } from '../users/user.entity';
 import {
   AddNoteDto,
   AssignIncidentDto,
@@ -20,7 +12,7 @@ import {
   ListIncidentsQuery,
   PostmortemDto,
   SORT_FIELDS,
-} from "./dto/incidents.dto";
+} from './dto/incidents.dto';
 import {
   assertCanAddNote,
   assertCanAssign,
@@ -29,12 +21,12 @@ import {
   assertCanResolve,
   assertCanWritePostmortem,
   higherSeverity,
-} from "./incident-policy";
-import { IncidentNote } from "./incident-note.entity";
-import { Incident, IncidentStatus, Severity } from "./incident.entity";
+} from './incident-policy';
+import { IncidentNote } from './incident-note.entity';
+import { Incident, IncidentStatus, Severity } from './incident.entity';
 
-const ENTITY_TYPE = "INCIDENT";
-const NOT_FOUND = "장애를 찾을 수 없습니다.";
+const ENTITY_TYPE = 'INCIDENT';
+const NOT_FOUND = '장애를 찾을 수 없습니다.';
 
 type UserSummary = { id: string; name: string; email: string };
 
@@ -72,7 +64,7 @@ export interface IncidentListResponse {
   total: number;
 }
 
-type Change = Pick<AuditEntry, "action" | "summary" | "changes">;
+type Change = Pick<AuditEntry, 'action' | 'summary' | 'changes'>;
 
 const RELATIONS = { reporter: true, assignee: true } as const;
 
@@ -120,10 +112,7 @@ export class IncidentsService {
   ) {}
 
   // IC-001: 모든 역할, 즉시 OPEN, peak는 초기 심각도로 시작
-  async create(
-    user: AuthUser,
-    dto: CreateIncidentDto,
-  ): Promise<IncidentResponse> {
+  async create(user: AuthUser, dto: CreateIncidentDto): Promise<IncidentResponse> {
     const organizationId = requireOrganization(user);
     const severity = dto.severity ?? Severity.MEDIUM;
 
@@ -143,7 +132,7 @@ export class IncidentsService {
         actorId: user.id,
         entityType: ENTITY_TYPE,
         entityId: incidentId,
-        action: "CREATED",
+        action: 'CREATED',
         summary: `장애 등록 (${severity})`,
         changes: {
           status: { from: null, to: IncidentStatus.OPEN },
@@ -157,27 +146,22 @@ export class IncidentsService {
   }
 
   // IC-002: 같은 조직이면 역할 무관 전체 공개
-  async list(
-    user: AuthUser,
-    query: ListIncidentsQuery,
-  ): Promise<IncidentListResponse> {
+  async list(user: AuthUser, query: ListIncidentsQuery): Promise<IncidentListResponse> {
     const qb = this.incidents
-      .createQueryBuilder("i")
-      .leftJoinAndSelect("i.reporter", "reporter")
-      .leftJoinAndSelect("i.assignee", "assignee")
-      .where("i.organizationId = :organizationId", {
+      .createQueryBuilder('i')
+      .leftJoinAndSelect('i.reporter', 'reporter')
+      .leftJoinAndSelect('i.assignee', 'assignee')
+      .where('i.organizationId = :organizationId', {
         organizationId: requireOrganization(user),
       });
 
-    if (query.status)
-      qb.andWhere("i.status = :status", { status: query.status });
-    if (query.severity)
-      qb.andWhere("i.severity = :severity", { severity: query.severity });
+    if (query.status) qb.andWhere('i.status = :status', { status: query.status });
+    if (query.severity) qb.andWhere('i.severity = :severity', { severity: query.severity });
 
-    const order = query.order === "asc" ? "ASC" : "DESC";
+    const order = query.order === 'asc' ? 'ASC' : 'DESC';
     const [items, total] = await qb
       .orderBy(`i.${SORT_FIELDS[query.sort]}`, order)
-      .addOrderBy("i.id", order) // 같은 값끼리 순서가 페이지마다 바뀌지 않도록
+      .addOrderBy('i.id', order) // 같은 값끼리 순서가 페이지마다 바뀌지 않도록
       .skip((query.page - 1) * query.limit)
       .take(query.limit)
       .getManyAndCount();
@@ -201,21 +185,14 @@ export class IncidentsService {
     ]);
     const contentById = new Map(notes.map((n) => [n.id, n.content]));
     const timeline = history.map((item) => {
-      const noteId =
-        item.action === "NOTE_ADDED"
-          ? (item.changes?.noteId as string | undefined)
-          : undefined;
+      const noteId = item.action === 'NOTE_ADDED' ? (item.changes?.noteId as string | undefined) : undefined;
       return noteId ? { ...item, content: contentById.get(noteId) } : item;
     });
     return { ...toResponse(inc), timeline };
   }
 
   // IC-004 (OPEN → INVESTIGATING, 지정) / IC-005 (INVESTIGATING 유지, 변경)
-  assign(
-    user: AuthUser,
-    id: string,
-    dto: AssignIncidentDto,
-  ): Promise<IncidentResponse> {
+  assign(user: AuthUser, id: string, dto: AssignIncidentDto): Promise<IncidentResponse> {
     return this.mutate(user, id, async (inc, manager) => {
       assertCanAssign(inc);
 
@@ -226,10 +203,7 @@ export class IncidentsService {
           isActive: true,
         },
       });
-      if (!assignee)
-        throw new BadRequestException(
-          "같은 조직의 활성 사용자만 담당자로 지정할 수 있습니다.",
-        );
+      if (!assignee) throw new BadRequestException('같은 조직의 활성 사용자만 담당자로 지정할 수 있습니다.');
 
       const previousAssigneeId = inc.assigneeId;
       if (previousAssigneeId === assignee.id) return null; // IC-005: 같은 사람이면 변경 없이 200
@@ -238,7 +212,7 @@ export class IncidentsService {
       if (inc.status === IncidentStatus.OPEN) {
         inc.status = IncidentStatus.INVESTIGATING;
         return {
-          action: "ASSIGNED",
+          action: 'ASSIGNED',
           summary: `담당자 지정: ${assignee.name}`,
           changes: {
             assignee: { from: null, to: assignee.id },
@@ -247,7 +221,7 @@ export class IncidentsService {
         };
       }
       return {
-        action: "ASSIGNEE_CHANGED",
+        action: 'ASSIGNEE_CHANGED',
         summary: `담당자 변경: ${assignee.name}`,
         changes: { assignee: { from: previousAssigneeId, to: assignee.id } },
       };
@@ -255,11 +229,7 @@ export class IncidentsService {
   }
 
   // IC-006: 본문은 incident_notes에, 감사 로그에는 note id만
-  async addNote(
-    user: AuthUser,
-    id: string,
-    dto: AddNoteDto,
-  ): Promise<TimelineItem> {
+  async addNote(user: AuthUser, id: string, dto: AddNoteDto): Promise<TimelineItem> {
     let note!: IncidentNote;
     await this.mutate(user, id, async (inc, manager) => {
       assertCanAddNote(user, inc);
@@ -271,14 +241,14 @@ export class IncidentsService {
         }),
       );
       return {
-        action: "NOTE_ADDED",
-        summary: "대응 기록 추가",
+        action: 'NOTE_ADDED',
+        summary: '대응 기록 추가',
         changes: { noteId: note.id },
       };
     });
     return {
-      action: "NOTE_ADDED",
-      summary: "대응 기록 추가",
+      action: 'NOTE_ADDED',
+      summary: '대응 기록 추가',
       changes: { noteId: note.id },
       actor: { id: user.id, name: user.name },
       createdAt: note.createdAt,
@@ -287,11 +257,7 @@ export class IncidentsService {
   }
 
   // IC-007: peak는 더 높은 쪽으로만 갱신
-  changeSeverity(
-    user: AuthUser,
-    id: string,
-    dto: ChangeSeverityDto,
-  ): Promise<IncidentResponse> {
+  changeSeverity(user: AuthUser, id: string, dto: ChangeSeverityDto): Promise<IncidentResponse> {
     return this.mutate(user, id, async (inc) => {
       assertCanChangeSeverity(user, inc);
       if (inc.severity === dto.severity) return null;
@@ -307,7 +273,7 @@ export class IncidentsService {
       const from = inc.severity;
       inc.severity = dto.severity;
       return {
-        action: "SEVERITY_CHANGED",
+        action: 'SEVERITY_CHANGED',
         summary: `심각도 변경 (${from} → ${dto.severity})`,
         changes,
       };
@@ -321,22 +287,15 @@ export class IncidentsService {
       inc.status = IncidentStatus.RESOLVED;
       inc.resolvedAt = new Date();
       return {
-        action: "RESOLVED",
-        summary: "해결 처리",
-        changes: statusChange(
-          IncidentStatus.INVESTIGATING,
-          IncidentStatus.RESOLVED,
-        ),
+        action: 'RESOLVED',
+        summary: '해결 처리',
+        changes: statusChange(IncidentStatus.INVESTIGATING, IncidentStatus.RESOLVED),
       };
     });
   }
 
   // IC-009: 작성·수정 공통. 본문은 감사 로그에 넣지 않는다.
-  writePostmortem(
-    user: AuthUser,
-    id: string,
-    dto: PostmortemDto,
-  ): Promise<IncidentResponse> {
+  writePostmortem(user: AuthUser, id: string, dto: PostmortemDto): Promise<IncidentResponse> {
     return this.mutate(user, id, async (inc) => {
       assertCanWritePostmortem(user, inc);
       const isFirst = !inc.postmortemWrittenAt;
@@ -345,8 +304,8 @@ export class IncidentsService {
       inc.postmortemPrevention = dto.prevention;
       inc.postmortemWrittenAt = new Date();
       return isFirst
-        ? { action: "POSTMORTEM_WRITTEN", summary: "Postmortem 작성" }
-        : { action: "POSTMORTEM_UPDATED", summary: "Postmortem 수정" };
+        ? { action: 'POSTMORTEM_WRITTEN', summary: 'Postmortem 작성' }
+        : { action: 'POSTMORTEM_UPDATED', summary: 'Postmortem 수정' };
     });
   }
 
@@ -357,8 +316,8 @@ export class IncidentsService {
       inc.status = IncidentStatus.CLOSED;
       inc.closedAt = new Date();
       return {
-        action: "CLOSED",
-        summary: "종료 처리",
+        action: 'CLOSED',
+        summary: '종료 처리',
         changes: statusChange(IncidentStatus.RESOLVED, IncidentStatus.CLOSED),
       };
     });
@@ -376,7 +335,7 @@ export class IncidentsService {
       // 관계를 함께 불러오면 FOR UPDATE를 걸 수 없어서 장애 행만 잠근다
       const inc = await manager.findOne(Incident, {
         where: { id, organizationId },
-        lock: { mode: "pessimistic_write" },
+        lock: { mode: 'pessimistic_write' },
       });
       if (!inc) throw new NotFoundException(NOT_FOUND);
 
