@@ -28,6 +28,8 @@ export interface PendingInvitationResponse {
   expiresAt: Date;
 }
 
+export type AssignableUser = Pick<User, 'id' | 'name' | 'email' | 'role'>;
+
 export interface MemberListResponse {
   members: MemberResponse[];
   invitations: PendingInvitationResponse[];
@@ -73,6 +75,15 @@ export class UsersService {
         expiresAt: inv.expiresAt,
       })),
     };
+  }
+
+  // 담당자로 지정할 수 있는 같은 조직의 활성 사용자. 드롭다운에 필요한 필드만 준다.
+  async assignable(actor: AuthUser): Promise<AssignableUser[]> {
+    return this.dataSource.manager.find(User, {
+      where: { organizationId: requireOrganization(actor), isActive: true },
+      select: { id: true, name: true, email: true, role: true },
+      order: { name: 'ASC' },
+    });
   }
 
   // AUTH-006

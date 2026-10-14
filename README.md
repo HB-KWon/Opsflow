@@ -61,6 +61,7 @@ npm run dev
 | POST | `/api/auth/invitations/accept` | 초대 수락 = 가입 (`token`, `name`, `password`). 이메일·역할·조직은 초대장에서 정해짐 | 공개 (IP당 분당 10회) |
 | POST | `/api/invitations/:id/resend` | 초대 재발송 (AUTH-009). 이전 토큰은 즉시 무효화, 응답의 `token`이 새 초대 토큰. 이미 가입 완료된 대상이면 409 | ADMIN |
 | GET | `/api/users` | 구성원 목록 (AUTH-007). `{ members, invitations }`로 응답 — members는 ACTIVE/INACTIVE, invitations는 가입 전 INVITED/EXPIRED만 포함(만료 초대도 재발송 가능해서 같이 줌). 페이지네이션 없음 | ADMIN |
+| GET | `/api/users/assignable` | 담당자 지정 드롭다운용 가벼운 목록. 같은 조직 활성 사용자의 `id`·`name`·`email`·`role`만 (구성원 관리 목록과 분리, AUTH-007 비고) | MANAGER, ADMIN |
 | PATCH | `/api/users/:id/role` | 역할 변경 (AUTH-006, Member↔Manager↔Admin). 조직의 마지막 활성 Admin은 스스로를 강등할 수 없음(409) | ADMIN |
 | PATCH | `/api/users/:id/deactivate` | 구성원 비활성화 (AUTH-008). 기존 세션 전부 즉시 무효화. 본인 비활성화는 인원수와 무관하게 항상 403, 이미 비활성 상태면 재요청도 200(멱등) | ADMIN |
 

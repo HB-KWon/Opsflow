@@ -1,19 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
+import { REQUEST_STATUS, type RequestStatus } from '../lib/requests';
 
 type Page<T> = { items: T[]; total: number };
-type RequestItem = { id: string; title: string; status: string; createdAt: string };
+type RequestItem = { id: string; title: string; status: RequestStatus; createdAt: string };
 type IncidentItem = { id: string; title: string; severity: string; createdAt: string };
 
-const REQUEST_STATUS: Record<string, string> = {
-  PENDING: '승인 대기',
-  APPROVED: '승인됨',
-  REJECTED: '반려',
-  CANCELLED: '취소',
-  IN_PROGRESS: '진행 중',
-  COMPLETED: '완료',
-};
 const SEVERITY_STYLE: Record<string, string> = {
   CRITICAL: 'bg-[#8A3D37] text-white',
   HIGH: 'bg-[#F3E1DF] text-[#8A3D37]',

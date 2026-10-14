@@ -16,6 +16,13 @@ export class UsersController {
     return this.users.list(user);
   }
 
+  // 담당자 지정 드롭다운용 가벼운 목록 (AUTH-007 비고: 구성원 관리 목록과 분리). Member는 지정 권한이 없어 403
+  @Roles(UserRole.MANAGER, UserRole.ADMIN)
+  @Get('assignable')
+  assignable(@CurrentUser() user: AuthUser) {
+    return this.users.assignable(user);
+  }
+
   // AUTH-006. Manager·Member는 RolesGuard에서 403
   @Roles(UserRole.ADMIN)
   @Patch(':id/role')
