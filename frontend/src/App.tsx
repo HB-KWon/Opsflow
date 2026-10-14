@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import IncidentDetail from './pages/IncidentDetail';
 import IncidentList from './pages/IncidentList';
 import Login from './pages/Login';
+import Members from './pages/Members';
 import RequestDetail from './pages/RequestDetail';
 import RequestList from './pages/RequestList';
 
@@ -22,7 +23,8 @@ function App() {
             <Route path="/incidents" element={<IncidentList />} />
             <Route path="/incidents/new" element={<ComingSoon />} />
             <Route path="/incidents/:id" element={<IncidentDetail />} />
-            {NAV.filter((n) => !['/', '/requests', '/incidents'].includes(n.to)).map((n) => (
+            <Route path="/members" element={<Members />} />
+            {NAV.filter((n) => !['/', '/requests', '/incidents', '/members'].includes(n.to)).map((n) => (
               <Route key={n.to} path={n.to} element={<ComingSoon />} />
             ))}
           </Route>

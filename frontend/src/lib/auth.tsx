@@ -3,6 +3,8 @@ import { api, refreshAccessToken, setAccessToken, setOnAuthLost } from './api';
 
 type Status = 'loading' | 'in' | 'out';
 export type Role = 'MEMBER' | 'MANAGER' | 'ADMIN';
+// eslint-disable-next-line react-refresh/only-export-components
+export const ROLE_LABEL: Record<Role, string> = { MEMBER: 'Member', MANAGER: 'Manager', ADMIN: 'Admin' };
 export type User = { id: string; email: string; name: string; role: Role; organizationId: string | null };
 type AuthValue = {
   status: Status;

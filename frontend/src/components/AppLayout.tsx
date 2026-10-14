@@ -1,5 +1,5 @@
 import { Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../lib/auth';
+import { ROLE_LABEL, useAuth } from '../lib/auth';
 
 // 사이드바 메뉴. 상단바 제목도 현재 경로에 맞는 항목의 이름을 쓴다.
 export const NAV = [
@@ -10,8 +10,6 @@ export const NAV = [
   { to: '/audit-logs', label: '감사 로그' },
   { to: '/settings', label: '설정' },
 ];
-
-const ROLE_LABEL = { MEMBER: 'Member', MANAGER: 'Manager', ADMIN: 'Admin' } as const;
 
 const titleOf = (path: string) =>
   NAV.find((n) => (n.to === '/' ? path === '/' : path === n.to || path.startsWith(`${n.to}/`)))?.label ?? 'OpsFlow';
