@@ -3,13 +3,14 @@
 //
 // 사용법 (backend 폴더에서):
 //   ADMIN_PASSWORD='비밀번호' npm run admin:create -- admin@opsflow.test "관리자" [organization_id]
-// organization_id를 생략하면 새 조직 id를 만든다. 비밀번호는 셸 기록에 남지 않도록 환경변수로 받는다.
+// organization_id를 생략하면 새 조직 id를 만든다. 조직에 요청 유형이 하나도 없으면 기본 유형을 넣는다. 비밀번호는 셸 기록에 남지 않도록 환경변수로 받는다.
 import { NestFactory } from '@nestjs/core';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../app.module';
 import { BCRYPT_ROUNDS } from '../auth/auth.service';
+import { DEFAULT_TEMPLATES, RequestTemplate } from '../requests/request-template.entity';
 import { User } from '../users/user.entity';
 import { UserRole } from '../users/user-role.enum';
 
@@ -28,7 +29,8 @@ async function main() {
 
   const app = await NestFactory.createApplicationContext(AppModule, { logger: ['error'] });
   try {
-    const users = app.get(DataSource).getRepository(User);
+    const dataSource = app.get(DataSource);
+    const users = dataSource.getRepository(User);
     if (await users.existsBy({ email })) {
       console.error(`이미 있는 이메일입니다: ${email}`);
       process.exitCode = 1;
@@ -45,6 +47,12 @@ async function main() {
       }),
     );
     console.log(`관리자 생성 완료: ${admin.email} (organization_id=${admin.organizationId})`);
+
+    const templates = dataSource.getRepository(RequestTemplate);
+    if (!(await templates.existsBy({ organizationId }))) {
+      await templates.insert(DEFAULT_TEMPLATES.map((t) => ({ ...t, organizationId })));
+      console.log(`기본 요청 유형 ${DEFAULT_TEMPLATES.length}개 추가: ${DEFAULT_TEMPLATES.map((t) => t.name).join(', ')}`);
+    }
   } finally {
     await app.close();
   }

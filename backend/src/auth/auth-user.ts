@@ -1,3 +1,4 @@
+import { ForbiddenException } from '@nestjs/common';
 import { User } from '../users/user.entity';
 import { UserRole } from '../users/user-role.enum';
 
@@ -41,4 +42,15 @@ export function toPublicUser(user: User): PublicUser {
     role: user.role,
     organizationId: user.organizationId,
   };
+}
+
+export const isManagerOrAdmin = (user: Pick<PublicUser, 'role'>) =>
+  user.role === UserRole.MANAGER || user.role === UserRole.ADMIN;
+
+// 조직 단위로 분리된 데이터를 다루는 API는 소속 조직이 있어야 한다
+export function requireOrganization(user: PublicUser): string {
+  if (!user.organizationId) {
+    throw new ForbiddenException('소속 조직이 없는 계정입니다.');
+  }
+  return user.organizationId;
 }

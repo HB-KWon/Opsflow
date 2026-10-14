@@ -75,7 +75,31 @@ cd backend
 ADMIN_PASSWORD='비밀번호' npm run admin:create -- admin@opsflow.test "관리자" [organization_id]
 ```
 
-`organization_id`를 생략하면 새 조직 id가 만들어진다.
+`organization_id`를 생략하면 새 조직 id가 만들어진다. 그 조직에 요청 유형이 하나도 없으면 기본 유형 4개(계정 발급, 접근 권한 요청, 설정 변경, 장비 요청)도 함께 들어간다.
+
+## 업무 요청 API
+
+기준 문서는 [RQ SRS](docs/srs/RQ-SRS.md)다. 모든 API는 로그인한 사용자 본인의 조직 데이터만 다룬다.
+
+| 메서드 | 경로 | 설명 | 권한 |
+| --- | --- | --- | --- |
+| GET | `/api/request-templates` | 요청 유형 목록 | 로그인 사용자 |
+| POST | `/api/requests` | 요청 생성 (`templateId`, `title`, `content`) → PENDING | 로그인 사용자 |
+| GET | `/api/requests` | 목록 (`page`, `limit`≤100, `sort`=created_at·updated_at·status·title, `order`, `status`, `templateId`) | Member는 본인 요청·담당 요청만, Manager·Admin은 조직 전체 |
+| GET | `/api/requests/:id` | 상세 + 상태 변경 이력(`history`) | 요청자, 담당자, Manager, Admin |
+| PATCH | `/api/requests/:id` | 수정. REJECTED 상태에서 수정하면 PENDING으로 재제출 | 요청자 본인 |
+| POST | `/api/requests/:id/cancel` | PENDING → CANCELLED | 요청자 본인 |
+| POST | `/api/requests/:id/approve` | PENDING → APPROVED (자기 요청은 불가) | Manager, Admin |
+| POST | `/api/requests/:id/reject` | PENDING → REJECTED (`reason` 필수) | Manager, Admin |
+| PATCH | `/api/requests/:id/assignee` | APPROVED면 담당자 지정 + IN_PROGRESS, IN_PROGRESS면 담당자만 변경 | Manager, Admin |
+| POST | `/api/requests/:id/complete` | IN_PROGRESS → COMPLETED | 담당자, Manager, Admin |
+
+오류 코드는 다음과 같이 나뉜다.
+- 다른 조직의 요청이거나 존재하지 않는 요청: 404
+- 같은 조직이지만 권한이 없음: 403
+- 현재 상태에서 할 수 없는 작업: 409
+
+모든 상태 변경은 요청 행을 잠근 트랜잭션 안에서 처리하고, 감사 로그(`audit_logs`)를 같은 트랜잭션에 남긴다.
 
 ## 테스트
 
