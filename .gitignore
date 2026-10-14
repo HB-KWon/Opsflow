@@ -21,3 +21,8 @@ npm-debug.log*
 # test coverage
 coverage/
 .DS_Store
+
+# vite/tsc build artifacts
+*.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
