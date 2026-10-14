@@ -79,12 +79,3 @@ export default function AppLayout() {
     </div>
   );
 }
-
-// 아직 만들지 않은 메뉴 자리
-export function ComingSoon() {
-  return (
-    <div className="bg-white border border-[#DEDDD7] rounded px-6 py-16 text-center text-sm text-[#83827D]">
-      준비 중입니다.
-    </div>
-  );
-}

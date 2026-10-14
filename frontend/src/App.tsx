@@ -1,14 +1,16 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import AppLayout, { ComingSoon } from './components/AppLayout';
+import AppLayout from './components/AppLayout';
 import { AuthProvider } from './lib/auth';
 import AuditLogs from './pages/AuditLogs';
 import Dashboard from './pages/Dashboard';
 import IncidentDetail from './pages/IncidentDetail';
 import IncidentList from './pages/IncidentList';
+import IncidentNew from './pages/IncidentNew';
 import Login from './pages/Login';
 import Members from './pages/Members';
 import RequestDetail from './pages/RequestDetail';
 import RequestList from './pages/RequestList';
+import RequestNew from './pages/RequestNew';
 import Settings from './pages/Settings';
 
 function App() {
@@ -20,10 +22,10 @@ function App() {
           <Route element={<AppLayout />}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/requests" element={<RequestList />} />
-            <Route path="/requests/new" element={<ComingSoon />} />
+            <Route path="/requests/new" element={<RequestNew />} />
             <Route path="/requests/:id" element={<RequestDetail />} />
             <Route path="/incidents" element={<IncidentList />} />
-            <Route path="/incidents/new" element={<ComingSoon />} />
+            <Route path="/incidents/new" element={<IncidentNew />} />
             <Route path="/incidents/:id" element={<IncidentDetail />} />
             <Route path="/members" element={<Members />} />
             <Route path="/audit-logs" element={<AuditLogs />} />
