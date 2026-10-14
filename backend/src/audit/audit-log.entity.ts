@@ -5,6 +5,7 @@ import { User } from '../users/user.entity';
 // 토큰·비밀번호·요청 본문 같은 민감하거나 긴 값은 넣지 않고, 무엇이 어떻게 바뀌었는지만 남긴다.
 @Entity('audit_logs')
 @Index(['organizationId', 'entityType', 'entityId', 'createdAt'])
+@Index(['organizationId', 'createdAt']) // 조직 전체 조회(GET /api/audit-logs)
 export class AuditLog {
   @PrimaryGeneratedColumn('uuid')
   id: string;
