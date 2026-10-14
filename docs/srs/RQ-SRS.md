@@ -146,6 +146,30 @@
 | APPROVED | → IN_PROGRESS | Manager, Admin(담당자 지정) | RQ-008 |
 | IN_PROGRESS | → COMPLETED | 담당자, Manager, Admin | RQ-010 |
 
+## RQ-012. 요청 유형 관리 (생성/수정/보관)
+| 항목 | 내용 |
+|---|---|
+| 사용자 | Admin |
+| 처리 | 조직별 요청 유형 생성, 수정(이름/설명만, isActive는 별도 보관 액션으로만 변경), 보관(비활성화) |
+
+> 삭제는 없음 — 기존 요청이 참조하고 있어 보관만 한다. 보관 해제(재활성화)는 범위 밖.
+> `GET /api/request-templates`는 기존대로 전체 역할이 호출 가능하고 기본 응답(활성만)도 그대로.
+> `?includeArchived=true`를 추가로 받되, Admin 호출일 때만 보관된 유형도 포함해서 응답하고
+> 다른 역할이 붙이면 무시한다 (요청 생성 폼 동작에는 영향 없음).
+
+**예외 처리**
+- 같은 조직 내 이름 중복 → 409 (수정 시 자기 자신은 중복 검사에서 제외)
+- 이미 보관된 유형에 보관 요청 재시도 → 200 (멱등)
+- Manager/Member의 생성·수정·보관 시도 → 403
+- 다른 조직 유형 대상 → 404
+
+**수용 기준**
+- [ ] Admin만 생성·수정·보관할 수 있다
+- [ ] 같은 조직 내 이름은 중복될 수 없다 (자기 자신 제외)
+- [ ] 보관된 유형은 새 요청 생성 시 선택할 수 없지만, 기존 요청의 참조는 유지된다
+- [ ] Admin이 `includeArchived=true`로 조회하면 보관된 유형도 함께 보인다
+- [ ] 생성·수정·보관은 감사 로그에 기록된다
+
 ## API 매핑
 | Method | Path | 권한 | SRS |
 |---|---|---|---|
@@ -158,5 +182,8 @@
 | POST | /api/requests/:id/reject | Manager, Admin | RQ-007 |
 | PATCH | /api/requests/:id/assignee | Manager, Admin | RQ-008, RQ-009 |
 | POST | /api/requests/:id/complete | 담당자, Manager, Admin | RQ-010 |
+| POST | /api/request-templates | Admin | RQ-012 |
+| PATCH | /api/request-templates/:id | Admin | RQ-012 |
+| POST | /api/request-templates/:id/archive | Admin | RQ-012 |
 
 > 공통 오류 응답 형식, 페이지네이션(`?page=1&limit=20`), 정렬(`?sort=created_at&order=desc`), 상태 필터(`?status=PENDING`)는 AUTH와 동일한 규칙을 따름.
