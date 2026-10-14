@@ -1,5 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import AppLayout, { ComingSoon, NAV } from './components/AppLayout';
+import AppLayout, { ComingSoon } from './components/AppLayout';
 import { AuthProvider } from './lib/auth';
 import AuditLogs from './pages/AuditLogs';
 import Dashboard from './pages/Dashboard';
@@ -9,6 +9,7 @@ import Login from './pages/Login';
 import Members from './pages/Members';
 import RequestDetail from './pages/RequestDetail';
 import RequestList from './pages/RequestList';
+import Settings from './pages/Settings';
 
 function App() {
   return (
@@ -26,9 +27,7 @@ function App() {
             <Route path="/incidents/:id" element={<IncidentDetail />} />
             <Route path="/members" element={<Members />} />
             <Route path="/audit-logs" element={<AuditLogs />} />
-            {NAV.filter((n) => !['/', '/requests', '/incidents', '/members', '/audit-logs'].includes(n.to)).map((n) => (
-              <Route key={n.to} path={n.to} element={<ComingSoon />} />
-            ))}
+            <Route path="/settings" element={<Settings />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
