@@ -54,6 +54,14 @@ export default function IncidentList() {
 
   return (
     <div className="space-y-4">
+      {/* 상세 화면의 "← 목록으로" 링크와 같은 자리에는 누를 것이 없도록 첫 줄은 건수(텍스트)로 두고 필터는 둘째 줄로 내린다. */}
+      <div className="flex items-center justify-between gap-4 min-h-9">
+        <p className="text-sm text-[#83827D]">{data && `전체 ${data.total}건`}</p>
+        <Link to="/incidents/new" className="bg-navy text-white text-sm font-semibold rounded px-4 py-2">
+          + 장애 등록
+        </Link>
+      </div>
+
       <div className="flex flex-wrap items-center gap-2">
         <select aria-label="상태" className={select} value={status} onChange={(e) => setFilter('status', e.target.value)}>
           <option value="">전체 상태</option>
@@ -71,9 +79,6 @@ export default function IncidentList() {
             </option>
           ))}
         </select>
-        <Link to="/incidents/new" className="ml-auto bg-navy text-white text-sm font-semibold rounded px-4 py-2">
-          + 장애 등록
-        </Link>
       </div>
 
       {error && (
@@ -118,22 +123,19 @@ export default function IncidentList() {
         {!data && !error && <p className="px-4 py-10 text-center text-sm text-[#83827D]">불러오는 중...</p>}
       </div>
 
-      {data && (
-        <div className="flex items-center justify-between text-xs text-[#83827D]">
-          <span>전체 {data.total}건</span>
-          {lastPage > 1 && (
-            <div className="flex items-center gap-2">
-              <button disabled={page <= 1} onClick={() => goPage(page - 1)} className="border border-[#DEDDD7] rounded px-2 py-1 disabled:opacity-40">
-                이전
-              </button>
-              <span>
-                {page} / {lastPage}
-              </span>
-              <button disabled={page >= lastPage} onClick={() => goPage(page + 1)} className="border border-[#DEDDD7] rounded px-2 py-1 disabled:opacity-40">
-                다음
-              </button>
-            </div>
-          )}
+      {data && lastPage > 1 && (
+        <div className="flex items-center justify-end text-xs text-[#83827D]">
+          <div className="flex items-center gap-2">
+            <button disabled={page <= 1} onClick={() => goPage(page - 1)} className="border border-[#DEDDD7] rounded px-2 py-1 disabled:opacity-40">
+              이전
+            </button>
+            <span>
+              {page} / {lastPage}
+            </span>
+            <button disabled={page >= lastPage} onClick={() => goPage(page + 1)} className="border border-[#DEDDD7] rounded px-2 py-1 disabled:opacity-40">
+              다음
+            </button>
+          </div>
         </div>
       )}
     </div>
